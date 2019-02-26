@@ -1,0 +1,102 @@
+{extend name="base/base" /}
+{block name="main"}
+<style>
+    .layui-form-label{
+        width: 131px!important;
+    }
+    .layui-input-block{
+        margin-left: 131px!important;
+    }
+</style>
+<div class="layui-body" id="LAY_app_body">
+    <div class="layui-col-md10">
+        <form id="form" method="post" class="layui-form layui-form-pane" action="{:url('/admin/add')}">
+            <div class="layui-form-item">
+                <label class="layui-form-label">点卡类型</label>
+                <div class="layui-input-block">
+                    <select name="card_type" xm-select="card_type" xm-select-radio lay-verify="required">
+                        <option value="0.75">七天:0.75元</option>
+                        <option value="1.5">一个月:1.5元</option>
+                        <option value="4.5">三个月:4.5元</option>
+                        <option value="9">六个月:9元</option>
+                        <option value="18">一年:18元</option>
+                        <option value="150">永久:150元</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">数量</label>
+                <div class="layui-input-block">
+                    <input type="text" name="num" placeholder="请输入生成数量" autocomplete="off" class="layui-input" value="" lay-verify="required|number">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <input type="hidden" name="__token__" id="token" value="{$Request.token}"/>
+                    <button class="layui-btn" lay-submit lay-filter="*">立即提交</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{/block}
+{block name="script"}
+{css href="/form-select/formSelects-v4.css" /}
+<script>
+    layui.config({
+        base: '/form-select/' //此处路径请自行处理, 可以使用绝对路径
+    }).extend({
+        formSelects: 'formSelects-v4'
+    });
+    layui.use(['form', 'jquery', 'formSelects'], function () {
+        var formSelects = layui.formSelects, form = layui.form, $ = layui.jquery;
+        //表单验证
+        form.verify({
+            username: function (value, item) { //value：表单的值、item：表单的DOM对象
+                var msg;
+                $.ajax({
+                    async: false,
+                    url: "{:url('/admin/check')}",
+                    data: {username: value},
+                    success: function (data) {
+                        if (data.code) {
+                            msg = data.msg;
+                        }
+                    }
+                });
+                return msg;
+            },
+            password: [
+                /^[\w\W]{6,25}$/
+                , '密码长度必须6到25位'
+            ]
+        });
+        //表单提交
+        form.on("submit(*)", function (data) {
+            var obj = $(this);
+            $.post(data.form.action, data.field, function (data) {
+                var icon = 5;
+                if (data.code) {
+                    icon = 6;
+                }
+                layer.msg(data.msg, {icon: icon, time: 1500}, function () {   //提示的插件，可以使用alert代替
+                    if (data.code) {
+                        setTimeout(function () {
+                            //刷新父页面
+                            location.href = data.url;
+                        }, 500);
+                    } else {
+                        $('#token').val(data.data.token);
+                        obj.removeAttr("disabled").removeClass("layui-disabled");
+                    }
+                });
+            }, 'json');
+            return false;
+        });
+    });
+
+
+</script>
+{/block}

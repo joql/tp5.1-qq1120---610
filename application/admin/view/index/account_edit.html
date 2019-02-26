@@ -1,0 +1,131 @@
+{extend name="base/base" /}
+{block name="main"}
+<style>
+    .layui-form-label{
+        width: 131px!important;
+    }
+    .layui-input-block{
+        margin-left: 131px!important;
+    }
+</style>
+<div class="layui-body" id="LAY_app_body">
+    <div class="layui-col-md10">
+        <form id="form" method="post" class="layui-form layui-form-pane" action="{:url('/admin/accountEdit')}">
+            <div class="layui-form-item">
+                <label class="layui-form-label">QQ/微信</label>
+                <div class="layui-input-block">
+                    <input type="text" name="weichat" placeholder="会显示在APP提示语后面" autocomplete="off" class="layui-input" value="{$user.weichat|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">APP提示语</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url" placeholder="比如：购卡请联系QQ/微信" autocomplete="off" class="layui-input" value="{$user.url|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">七天购买链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url5" placeholder="请以http://开头.如不填写，会默认弹出APP提示语及联系方式" autocomplete="off" class="layui-input" value="{$user.url5|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">一个月购买链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url1" placeholder="请以http://开头.如不填写，会默认弹出APP提示语及联系方式" autocomplete="off" class="layui-input" value="{$user.url1|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">三个月购买链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url2" placeholder="请以http://开头.如不填写，会默认弹出APP提示语及联系方式" autocomplete="off" class="layui-input" value="{$user.url2|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">六个月购买链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url6" placeholder="请以http://开头.如不填写，会默认弹出APP提示语及联系方式" autocomplete="off" class="layui-input" value="{$user.url6|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">一年购买链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url3" placeholder="请以http://开头.如不填写，会默认弹出APP提示语及联系方式" autocomplete="off" class="layui-input" value="{$user.url3|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">永久购买链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url4" placeholder="请以http://开头.如不填写，会默认弹出APP提示语及联系方式" autocomplete="off" class="layui-input" value="{$user.url4|default='无数据'}" lay-verify="required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <input type="hidden" name="__token__" id="token" value="{$Request.token}"/>
+                    <button class="layui-btn" lay-submit lay-filter="*">立即提交</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{/block}
+{block name="script"}
+{css href="/form-select/formSelects-v4.css" /}
+<script>
+    layui.config({
+        base: '/form-select/' //此处路径请自行处理, 可以使用绝对路径
+    }).extend({
+        formSelects: 'formSelects-v4'
+    });
+    layui.use(['form', 'jquery', 'formSelects'], function () {
+        var  form = layui.form, $ = layui.jquery;
+        //表单验证
+        form.verify({
+            username: function (value, item) { //value：表单的值、item：表单的DOM对象
+                var msg;
+                $.ajax({
+                    async: false,
+                    url: "{:url('/admin/check')}",
+                    data: {username: value},
+                    success: function (data) {
+                        if (data.code) {
+                            msg = data.msg;
+                        }
+                    }
+                });
+                return msg;
+            },
+            password: [
+                /^[\w\W]{6,25}$/
+                , '密码长度必须6到25位'
+            ]
+        });
+        //表单提交
+        form.on("submit(*)", function (data) {
+            var obj = $(this);
+            $.post(data.form.action, data.field, function (data) {
+                var icon = 5;
+                if (data.code) {
+                    icon = 6;
+                }
+                layer.msg(data.msg, {icon: icon, time: 1500}, function () {   //提示的插件，可以使用alert代替
+                    if (data.code) {
+                        setTimeout(function () {
+                            //刷新父页面
+                            location.href = data.url;
+                        }, 500);
+                    } else {
+                        $('#token').val(data.data.token);
+                        obj.removeAttr("disabled").removeClass("layui-disabled");
+                    }
+                });
+            }, 'json');
+            return false;
+        });
+    });
+
+
+</script>
+{/block}
