@@ -8,11 +8,18 @@
 
 namespace app\admin\service;
 
+use app\admin\model\Adduser;
+use app\admin\model\Kai;
+use app\admin\model\Moneylog;
+use app\admin\model\PassLog;
+use app\admin\model\Timelog;
 use app\admin\model\User;
 use app\admin\model\LoginLog;
 use app\admin\model\AuthGroupAccess;
+use think\db\Where;
 use think\facade\Request;
 use app\admin\traits\Result;
+use think\Validate;
 
 class UserService
 {
@@ -116,40 +123,76 @@ class UserService
      * @author 原点 <467490186@qq.com>
      * @throws \Exception
      */
-    public static function add($data)
+    public static function add($data, $uid)
     {
         //验证数据合法性
-        $validate = validate('User');
-        if (!$validate->scene('add')->check($data)) {
-            //令牌数据无效时重置令牌
-            $validate->getError() != '令牌数据无效' ? $token = Request::token() : $token = '';
-            $msg = Result::error($validate->getError(), null, ['token' => $token]);
+        $validate = Validate::make([
+            'name'  => 'require',
+            'password' => 'require',
+            'password_confirm' => 'require',
+            'wx' => 'require',
+            'contact' => 'require',
+            'user_type' => 'require',
+        ]);
+        if (!$validate->check($data)) {
+            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
             return $msg;
         }
+        if ($data['password'] !== $data['password_confirm']) {
+            $msg = Result::error('两次密码不一致', null, ['token' => Request::token()]);
+            return $msg;
+        }
+
         $user = new User;
-        $user->user = $data['user'];
-        $user->name = $data['name'];
-        $user->status = $data['status'];
-        $user->password = password_hash($data['password'], PASSWORD_DEFAULT);
+        $money = User::where('id','=',$uid)->value('money');
+        if($money < 20){
+            $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+            return $msg;
+        }
+        $user->parentid = $uid;
+        $user->username = $data['name'];
+        $user->password =  md5(sha1($data['password']));
+        $user->power =  '1';
+        $user->status =  '1';
+        $user->phone =  $data['contact'];
+        $user->weichat =  $data['wx'];
+        $user->share_ma =  rand('100000','999999');
+        $user->ctime =  time();
+        $user->logintime =  '0';
+        $user->lasttime =  '0';
+        $user->money =  '0.00';
+        $sha_count = User::where('share_ma','=',$user->share_ma)->count();
+        if($sha_count>0){
+            $msg = Result::error('添加失败', null, ['token' => Request::token()]);
+            return $msg;
+        }
+        $count = User::where('username','=',$user->username)->count();
+        if($count>0){
+            $msg = Result::error('用户名已存在', null, ['token' => Request::token()]);
+            return $msg;
+        }
         $res = $user->save();
         if ($res) {
-            $group_ids = explode(',', $data['group_id']);
-            $save = [];
-            foreach ($group_ids as $v) {
-                $save[] = [
-                    'uid' => $user->uid,
-                    'group_id' => $v
-                ];
-            }
-            $AuthGroupAccess = new AuthGroupAccess;
-            $res2 = $AuthGroupAccess->saveAll($save, false);
-            if ($res2) {
-                $msg = Result::success('添加成功', url('/admin/userList'));
-            } else {
-                $msg = Result::error('添加失败', null, ['token' => Request::token()]);
-            }
+            User::where('id','=',$uid)->setDec('money',20);
+            $moneylog = new Moneylog();
+            $moneylog->uid = $uid;
+            $moneylog->ctime = time();
+            $moneylog->cid = $user->id;
+            $moneylog->money = '20';
+            $moneylog->save();
+
+            User::update(['money'=>20],['id'=>$moneylog->cid]);
+            $kai = new Kai();
+            $kai->uid = $uid;
+            $kai->cid = $moneylog->cid;
+            $kai->ctime = time();
+            $kai->save();
+            $msg = Result::success('添加成功', url('/admin/platagent'));
+        }else{
+            $msg = Result::error('添加失败', null, ['token' => Request::token()]);
         }
         return $msg;
+
     }
 
     /**
@@ -231,6 +274,274 @@ class UserService
         } else {
             $msg = Result::error('删除失败');
         }
+        return $msg;
+    }
+
+    public static function addMember($data, $uid)
+    {
+        //验证数据合法性
+        $validate = Validate::make([
+            'name'  => 'require',
+            'card_type' => 'require',
+        ]);
+        if (!$validate->check($data)) {
+            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
+            return $msg;
+        }
+        if (isset($data['password']) && ($data['password'] !== $data['password_confirm'])) {
+            $msg = Result::error('两次密码不一致', null, ['token' => Request::token()]);
+            return $msg;
+        }
+
+        $user = new User;
+        $money = User::where('id','=',$uid)->value('money');
+        if($money < $data['card_type']){
+            $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+            return $msg;
+        }
+        $type   =   '0';
+        switch ($data['card_type'])
+        {
+            case 0.5;
+                $time  =   7*60*60*24;
+                break;
+            case 1;
+                $time  =   30*60*60*24;
+                break;
+            case 2;
+                $time  =   90*60*60*24;
+                break;
+            case 8;
+                $time  =   365*60*60*24;
+                break;
+            case 10;
+                $type   =   1;
+                break;
+        }
+
+        $user->parentid = $uid;
+        $user->username = $data['name'];
+        isset($data['password']) && $user->password =  md5(sha1($data['password']));
+        $user->power =  '2';
+        $user->status =  '1';
+        //$user->phone =  $data['contact'];
+        //$user->weichat =  $data['wx'];
+        //$user->share_ma =  rand('100000','999999');
+        $user->ctime =  time();
+        $user->logintime =  '0';
+        $user->lasttime =  '0';
+        $user->money =  '0.00';
+//        $sha_count = User::where('share_ma','=',$user->share_ma)->count();
+//        if($sha_count>0){
+//            $msg = Result::error('添加失败', null, ['token' => Request::token()]);
+//            return $msg;
+//        }
+        $count = User::where('username','=',$user->username)->count();
+        if($count>0){
+            $msg = Result::error('用户名已存在', null, ['token' => Request::token()]);
+            return $msg;
+        }
+        $res = $user->save();
+        if ($res) {
+            if($type == '1'){
+                User::update([
+                    'type'=>'1',
+                    'money' => '-10.00'
+                ],['id'=>$user->id]);
+                $timelog = new Timelog();
+                $timelog->uid = $uid;
+                $timelog->ctime = time();
+                $timelog->cid = $user->id;
+                $timelog->day = 'all';
+                $timelog->money = $data['card_type'];
+                $timelog->lasttime = 'all';
+                $timelog->save();
+            }else{
+                $now = time();
+                User::update([
+                    'lasttime' => $now+$time,
+                ],['id'=>$user->id]);
+                $card = timediff($time);
+                $timelog = new Timelog();
+                $timelog->uid = $uid;
+                $timelog->ctime = $now;
+                $timelog->cid = $user->id;
+                $timelog->day = $card['day'];
+                $timelog->money = $data['card_type'];
+                $timelog->lasttime = $now+$time;
+                $timelog->save();
+                User::Where(['id'=>$uid])->setDec('money',$data['card_type']);
+            }
+            $msg = Result::success('添加成功', url('/admin/platmember'));
+        }else{
+            $msg = Result::error('添加失败', null, ['token' => Request::token()]);
+        }
+        return $msg;
+
+    }
+
+    public static function editMember($data, $uid)
+    {
+        //验证数据合法性
+        $validate = Validate::make([
+            'id' => 'require',
+            'name'  => 'require',
+            'user_type' => 'require',
+        ]);
+        if (!$validate->check($data)) {
+            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
+            return $msg;
+        }
+        $user = User::Where('id',$data['id'])->find();
+        if (isset($data['password']) && ($data['password'] !== $data['password_confirm'])) {
+            $msg = Result::error('两次密码不一致', null, ['token' => Request::token()]);
+            return $msg;
+        }
+        isset( $data['wx']) && $user->weichat =  $data['wx'];
+        isset( $data['contact']) && $user->phone =  $data['contact'];
+        if($data['user_type'] == '1'){
+            $money = User::where('id','=',$uid)->value('money');
+            if($money < 20){
+                $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+                return $msg;
+            }else{
+                $user->parentid = $uid;
+                $user->power = 1;
+                $user->share_ma =  rand('100000','999999');
+                $sha_count = User::where('share_ma','=',$user->share_ma)->count();
+                if($sha_count>0){
+                    $msg = Result::error('修改失败', null, ['token' => Request::token()]);
+                    return $msg;
+                }
+            }
+        }
+        if(isset($data['password'])){
+            $old_pass = $user->password;
+            if($old_pass !== md5(sha1($data['password']))){
+                $passlog = new PassLog;
+                $passlog->ip = getIP();
+                $passlog->ctime = time();
+                $passlog->uid = $data['id'];
+                $passlog->aid = $uid;
+                $passlog->old_pass = $old_pass;
+                $passlog->pass = md5(sha1($data['password']));
+                $passlog->web = 0;
+                $passlog->save();
+            }
+        }
+        isset($data['password']) && $user->password =  md5(sha1($data['password']));
+        $user->ctime =  time();
+        $res = $user->save();
+        if ($res) {
+            if($data['user_type'] == '1'){
+                User::where('id','=',$uid)->setDec('money',20);
+                $moneylog = new Moneylog();
+                $moneylog->uid = $uid;
+                $moneylog->ctime = time();
+                $moneylog->cid = $user->id;
+                $moneylog->money = '20';
+                $moneylog->save();
+            }
+            User::update(['money'=>20],['id'=>$data['id']]);
+            $kai = new Kai();
+            $kai->uid = $uid;
+            $kai->cid = $data['id'];
+            $kai->ctime = time();
+            $kai->save();
+            $msg = Result::success('修改成功', url('/admin/platmember'));
+        }else{
+            $msg = Result::error('修改失败', null, ['token' => Request::token()]);
+        }
+        return $msg;
+
+    }
+
+    public static function addMemberMore($data, $uid)
+    {
+        //验证数据合法性
+        $validate = Validate::make([
+            'num'  => 'require',
+            'card_type' => 'require',
+        ]);
+        if (!$validate->check($data)) {
+            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
+            return $msg;
+        }
+
+        $money = User::where('id','=',$uid)->value('money');
+        if($money < $data['card_type'] * $data['num']){
+            $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+            return $msg;
+        }
+        $type   =   '0';
+        $time   =   '0';
+        switch ($data['card_type'])
+        {
+            case 0.5;
+                $time  =   7*60*60*24;
+                $day ='七天';
+                break;
+            case 1;
+                $time  =   30*60*60*24;
+                $day ='一个月';
+                break;
+            case 2;
+                $time  =   90*60*60*24;
+                $day ='三个月';
+                break;
+            case 8;
+                $time  =   365*60*60*24;
+                $day ='一年';
+                break;
+            case 10;
+                $type   =   1;
+                $day ='永久';
+                break;
+        }
+        $users   =   [];
+        for ($i = 0; $i < $data['num']; $i++)
+        {
+            $username = strtolower(getRandomString(6));
+            if(User::Where('username',$username)->count() == 0){
+                $users[$i]['username'] = $username;
+                $users[$i]['day'] = $day;
+                $users[$i]['lasttime'] = date('Y-m-d H:i:s',time()+$time);;
+                $user = new User;
+                $user->parentid = $uid;
+                $user->username = $username;
+                $user->password =  md5(sha1('123456'));
+                $user->power =  '2';
+                $user->status =  '1';
+                $user->ctime =  time();
+                $user->money =  '0.00';
+                if($type == '0'){
+                    $user->lasttime =  time()+$time;
+                }else{
+                    $user->type =  '1';
+                }
+                $res = $user->save();
+                User::Where('id',$uid)->setDec('money',$data['num']*$data['card_type']);
+                $adduser = new Adduser();
+                $adduser->uid = $uid;
+                $adduser->cid = $user->id;
+                $adduser->time = $day;
+                $adduser->lasttime = time()+$time;
+                $adduser->ctime = time();
+                $adduser->save();
+            }else{
+                $i = $i -1;
+            }
+            unset($username);
+            unset($user);
+            unset($adduser);
+        }
+        $zi = '';
+        foreach ($users as $value)
+        {
+            $zi .=$value['username'].'----123456----'.$value['day'].'----'.$value['lasttime']."\r\n";
+        }
+        session('down_userlist',$zi);
+        $msg = Result::success('生成成功', url('/admin/platdown'));
         return $msg;
     }
 

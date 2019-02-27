@@ -10,26 +10,27 @@ namespace app\admin\model;
 
 use think\Model;
 
-class User extends Model
+class Timelog extends Model
 {
     protected $autoWriteTimestamp = true;
-    protected $type = [
-        'last_login_time' => 'timestamp',
-    ];
 
-
-    /**
-     * 搜索器
-     * @param $query
-     * @param $value
-     */
-    public function searchNameAttr($query, $value)
+    public function searchCidAttr($query, $value)
     {
         if ($value) {
-            $query->where('username|nick_name', 'like', '%' . $value . '%');
+            $ids = User::Where('username','like',"%{$value}%")->column('id');
+            if($ids){
+                $query->where('cid', 'in', implode(',',$ids));
+            }else{
+                $query->where('cid', '=', '99999999999999999999999999999');
+            }
         }
     }
-
+    public function searchDayAttr($query, $value)
+    {
+        if ($value) {
+            $query->where('day', '=',  $value);
+        }
+    }
     public function searchCtimeAttr($query, $value, $data)
     {
         if ($value[0] && $value[1]) {

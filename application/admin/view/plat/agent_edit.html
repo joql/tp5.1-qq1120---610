@@ -1,0 +1,112 @@
+{extend name="base/base" /}
+{block name="main"}
+<form id="form" method="post" class="layui-form layui-form-pane" action="{:url('/admin/platagentedit')}">
+    <div class="layui-form-item">
+        <label class="layui-form-label">账号</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" placeholder="请输入" autocomplete="off" class="layui-input" lay-verify="required">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">密码</label>
+        <div class="layui-input-block">
+            <input type="password" name="password" placeholder="请输入密码" autocomplete="off" class="layui-input" lay-verify="required|password">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">确认密码</label>
+        <div class="layui-input-block">
+            <input type="password" name="password_confirm" placeholder="确认密码" autocomplete="off" class="layui-input"   lay-verify="required|password">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">微信</label>
+        <div class="layui-input-block">
+            <input type="text" name="wx" placeholder="请输入微信" autocomplete="off" class="layui-input" lay-verify="required">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">联系方式</label>
+        <div class="layui-input-block">
+            <input type="text" name="contact" placeholder="QQ或者微信" autocomplete="off" class="layui-input" lay-verify="required">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">身份</label>
+        <div class="layui-input-block">
+            <select name="user_type" xm-select="user_type" xm-select-radio lay-verify="required">
+                <option value="1" selected >开通代理&nbsp;(需扣除二十点)</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <input type="hidden" name="__token__" id="token" value="{$Request.token}"/>
+            <button class="layui-btn" lay-submit lay-filter="*">立即提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+{/block}
+{block name="script"}
+{css href="/form-select/formSelects-v4.css" /}
+<script>
+    layui.config({
+        base: '/form-select/' //此处路径请自行处理, 可以使用绝对路径
+    }).extend({
+        formSelects: 'formSelects-v4'
+    });
+    layui.use(['form', 'jquery', 'formSelects'], function () {
+        var formSelects = layui.formSelects, form = layui.form, $ = layui.jquery;
+        formSelects.on('selectId', function (id, vals, val, isAdd, isDisabled) {
+            $('#group_id').val(layui.formSelects.value(id, 'val'));
+        }, true);
+        //表单验证
+        form.verify({
+            username: function (value, item) { //value：表单的值、item：表单的DOM对象
+                var msg;
+                $.ajax({
+                    async: false,
+                    url: "{:url('/admin/check')}",
+                    data: {username: value},
+                    success: function (data) {
+                        if (data.code) {
+                            msg = data.msg;
+                        }
+                    }
+                });
+                return msg;
+            },
+            password: [
+                /^[\w\W]{6,18}$/
+                , '密码长度必须6到18位'
+            ]
+        });
+        //表单提交
+        form.on("submit(*)", function (data) {
+            var obj = $(this);
+            obj.attr("disabled", "disabled").addClass("layui-disabled");
+            $.post(data.form.action, data.field, function (data) {
+                var icon = 5;
+                if (data.code) {
+                    icon = 6;
+                }
+                layer.msg(data.msg, {icon: icon, time: 1500}, function () {   //提示的插件，可以使用alert代替
+                    if (data.code) {
+                        setTimeout(function () {
+                            //刷新父页面
+                            parent.location.reload();
+                        }, 500);
+                    } else {
+                        $('#token').val(data.data.token);
+                        obj.removeAttr("disabled").removeClass("layui-disabled");
+                    }
+                });
+            }, 'json');
+            return false;
+        });
+    });
+
+
+</script>
+{/block}

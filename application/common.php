@@ -161,3 +161,80 @@ function randstring($len)
 
 }
 
+function timediff($timediff)
+{
+
+    $days = intval($timediff/86400);
+    //计算小时数
+    $remain = $timediff%86400;
+    $hours = intval($remain/3600);
+    //计算分钟数
+    $remain = $remain%3600;
+    $mins = intval($remain/60);
+    //计算秒数
+    $secs = $remain%60;
+    $res = array("day" => $days,"hour" => $hours,"min" => $mins,"sec" => $secs);
+    return $res;
+}
+
+
+function getIP() {
+    if (getenv('HTTP_CLIENT_IP')) {
+        $ip = getenv('HTTP_CLIENT_IP');
+    }
+    elseif (getenv('HTTP_X_FORWARDED_FOR')) {
+        $ip = getenv('HTTP_X_FORWARDED_FOR');
+    }
+    elseif (getenv('HTTP_X_FORWARDED')) {
+        $ip = getenv('HTTP_X_FORWARDED');
+    }
+    elseif (getenv('HTTP_FORWARDED_FOR')) {
+        $ip = getenv('HTTP_FORWARDED_FOR');
+
+    }
+    elseif (getenv('HTTP_FORWARDED')) {
+        $ip = getenv('HTTP_FORWARDED');
+    }
+    else {
+        $ip = $_SERVER['REMOTE_ADDR'];
+    }
+    return $ip;
+}
+
+function getRandomString($len, $chars=null,$type=false)
+{
+
+    if($type==true)
+    {
+        $authnum	=	rand('100000','999999');
+        $count  =   db('user')->where('share_ma',$authnum)->count();
+        if($count>0 || in_array($authnum,['111111','222222','333333','444444','555555','666666','777777','888888','999999','000000','123456','654321']))
+        {
+            $authnum    =   getRandomString($len,$chars,$type);
+        }
+    }else{
+        srand((double)microtime()*1000000);//create a random number feed.
+        $ychar="0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z";
+        $list=explode(",",$ychar);
+        $authnum='';
+        for($i=0;$i<6;$i++){
+            $randnum=rand(0,35); // 10+26;
+            $authnum.=$list[$randnum];
+        }
+    }
+
+
+    return $authnum;
+
+}
+
+function exportTxt($filename, $txt){
+    Header( "Content-type:   application/octet-stream ");
+    Header( "Accept-Ranges:   bytes ");
+    header( "Content-Disposition:   attachment;   filename={$filename}");
+    header( "Expires:   0 ");
+    header( "Cache-Control:   must-revalidate,   post-check=0,   pre-check=0 ");
+    header( "Pragma:   public ");
+    echo $txt;
+}
+

@@ -1,0 +1,87 @@
+{extend name="base/base" /}
+{block name="main"}
+<form id="form" method="post" class="layui-form layui-form-pane" action="{:url('/admin/platmembereditmore')}">
+    <div class="layui-form-item">
+        <label class="layui-form-label">数量</label>
+        <div class="layui-input-block">
+            <input type="text" name="num" placeholder="请输入数量" autocomplete="off" class="layui-input" lay-verify="required" >
+        </div>
+    </div>
+    <div class="layui-input-inline">
+        <label class="layui-form-label">类型</label>
+        <div class="layui-input-block">
+            <select name="card_type" xm-select="card_type" xm-select-radio lay-verify="required">
+                <option value="0.5">七天0.5点</option>
+                <option value="1">一个月1点</option>
+                <option value="2">三个月2点</option>
+                <option value="8">一年8点</option>
+                <option value="10">永久10点</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <input type="hidden" name="__token__" id="token" value="{$Request.token}"/>
+            <button class="layui-btn" lay-submit lay-filter="*">立即提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="script"}
+{css href="/form-select/formSelects-v4.css" /}
+<script>
+    layui.config({
+        base: '/form-select/' //此处路径请自行处理, 可以使用绝对路径
+    }).extend({
+        formSelects: 'formSelects-v4'
+    });
+    layui.use(['form', 'jquery', 'formSelects'], function () {
+        var formSelects = layui.formSelects, form = layui.form, $ = layui.jquery;
+        formSelects.on('selectId', function (id, vals, val, isAdd, isDisabled) {
+            $('#group_id').val(layui.formSelects.value(id, 'val'));
+        }, true);
+        //表单验证
+        form.verify({
+            agentNeed: function (value, item) { //value：表单的值、item：表单的DOM对象
+                var msg=formSelects.value('user_type', 'valStr');
+                if(msg == '1'){
+                    if(value === ''){
+                        return '微信和联系方式不能为空';
+                    }
+                }
+            },
+            password: [
+                /^[\w\W]{6,18}$/
+                , '密码长度必须6到18位'
+            ]
+        });
+        //表单提交
+        form.on("submit(*)", function (data) {
+            var obj = $(this);
+            obj.attr("disabled", "disabled").addClass("layui-disabled");
+            $.post(data.form.action, data.field, function (data) {
+                var icon = 5;
+                if (data.code) {
+                    icon = 6;
+                }
+                layer.msg(data.msg, {icon: icon, time: 1500}, function () {   //提示的插件，可以使用alert代替
+                    if (data.code) {
+                        setTimeout(function () {
+                            //刷新父页面
+                            location.href = data.url;
+                        }, 500);
+                    } else {
+                        $('#token').val(data.data.token);
+                        obj.removeAttr("disabled").removeClass("layui-disabled");
+                    }
+                });
+            }, 'json');
+            return false;
+        });
+    });
+
+
+</script>
+{/block}

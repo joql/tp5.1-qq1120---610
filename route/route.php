@@ -36,6 +36,14 @@ Route::group('admin', [
     'add'=>'admin/Card/add',                                              //卡密添加
     'carduse'=>'admin/Card/uses',                                              //卡密添加
     'cardused'=>'admin/Card/used',                                              //卡密添加
+    'platmoney'=>'admin/Plat/money',                                              //卡密添加
+    'platpoint'=>'admin/Plat/point',                                              //卡密添加
+    'platagent'=>'admin/Plat/agent',                                              //卡密添加
+    'platagentedit'=>'admin/Plat/agentEdit',                                              //卡密添加
+    'platmember'=>'admin/Plat/member',                                              //卡密添加
+    'platmemberedit'=>'admin/Plat/memberEdit',                                              //卡密添加
+    'platmembereditmore'=>'admin/Plat/memberEditMore',                                              //卡密添加
+    'platdown'=>'admin/Plat/memberDownload',                                              //卡密添加
     'accountEdit'=>'admin/Index/accountEdit',                                              //系统信息
     //用户管理
     'userList$'=>'admin/User/userList',                                      //用户列表
