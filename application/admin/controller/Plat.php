@@ -117,10 +117,21 @@ class Plat extends Common
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
-            //添加
-            $data = UserService::add($data, $this->uid);
-            return $data;
+            if($data['id']){
+                //添加
+                $data = UserService::edit($data, $this->uid);
+                return $data;
+            }else{
+                //添加
+                $data = UserService::add($data, $this->uid);
+                return $data;
+            }
         } else {
+            $uid = $this->request->get('uid', 0, 'intval');
+            if ($uid) {
+                $list = User::where('id', '=', $uid)->find();
+                $this->assign('userinfo', $list);
+            }
             return $this->fetch();
         }
     }

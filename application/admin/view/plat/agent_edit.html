@@ -1,6 +1,26 @@
 {extend name="base/base" /}
 {block name="main"}
 <form id="form" method="post" class="layui-form layui-form-pane" action="{:url('/admin/platagentedit')}">
+    {if isset($userinfo)}
+    <div class="layui-form-item">
+        <label class="layui-form-label">充值点数</label>
+        <div class="layui-input-block">
+            <input type="text" name="money" placeholder="请输入充值点数" autocomplete="off" class="layui-input" lay-verify="">
+        </div>
+    </div>
+    <div class="layui-input-inline">
+        <label class="layui-form-label">类型</label>
+        <div class="layui-input-block">
+            <select name="card_type" xm-select="card_type" xm-select-radio>
+                <option value="0.5">七天0.5点</option>
+                <option value="1">一个月1点</option>
+                <option value="2">三个月2点</option>
+                <option value="8">一年8点</option>
+                <option value="10">永久10点</option>
+            </select>
+        </div>
+    </div>
+    {else /}
     <div class="layui-form-item">
         <label class="layui-form-label">账号</label>
         <div class="layui-input-block">
@@ -39,9 +59,11 @@
             </select>
         </div>
     </div>
+    {/if}
     <div class="layui-form-item">
         <div class="layui-input-block">
             <input type="hidden" name="__token__" id="token" value="{$Request.token}"/>
+            <input type="hidden" name="id" id="uid" value="{:isset($userinfo)?$userinfo.id:''}"/>
             <button class="layui-btn" lay-submit lay-filter="*">立即提交</button>
             <button type="reset" class="layui-btn layui-btn-primary">重置</button>
         </div>

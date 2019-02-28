@@ -79,12 +79,13 @@ class CardService
             $M_dianka->type = $type;
             $M_dianka->name = $name;
             $M_dianka->save();
-            $dian.=   $data."<br><hr>";
+            $dian.= "{$name}----{$data}\r\n";
         }
         $res = User::update(array('money'=>$money-$fen*$ctime),array('id'=>$uid));
 
         if ($res) {
-            $msg = Result::success('添加成功', url('/admin/add'));
+            session('card_list',$dian);
+            $msg = Result::success('添加成功', url('/admin/carddown'));
         } else {
             $msg = Result::error('添加失败');
         }

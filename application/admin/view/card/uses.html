@@ -24,6 +24,8 @@
                     <input type="text" class="layui-input endtime" placeholder="结束时间"/>
                 </div>
                 <a class="layui-btn search_btn" data-type="reload">搜索</a>
+                <a class="layui-btn export_txt_btn" data-type="reload">导出TxT</a>
+                <a class="layui-btn export_excel_btn" data-type="reload">导出Excel</a>
             </div>
         </form>
     </blockquote>
@@ -66,6 +68,7 @@
             limits:[5,10,15,20],
             height : "full-125",
             id:'usersListTable',
+            defaultToolbar: ['filter', 'print', 'exports'],
             cols : [[
                 {field: 'dianka', title: '卡号', width:320, align:"center"},
                 {field: 'name', title: '充值时间', width:90},
@@ -87,6 +90,22 @@
                     card_type: formSelects.value('card_type', 'valStr')
                 }
             })
+        });
+        $(".export_txt_btn").on("click",function(){
+            var txt_url = "{:url('/admin/cardexporttxt')}"
+                + '?card_no='+$(".searchVal").val()
+                + '&starttime='+$(".starttime").val()
+                + '&endtime='+$(".endtime").val()
+                + '&card_type='+formSelects.value('card_type', 'valStr');
+            location.href = txt_url;
+        });
+        $(".export_excel_btn").on("click",function(){
+            var excel_url = "{:url('/admin/cardexportexcel')}"
+                + '?card_no='+$(".searchVal").val()
+                + '&starttime='+$(".starttime").val()
+                + '&endtime='+$(".endtime").val()
+                + '&card_type='+formSelects.value('card_type', 'valStr');
+            location.href = excel_url;
         });
 
     })

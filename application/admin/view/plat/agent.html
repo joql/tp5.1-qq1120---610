@@ -22,6 +22,9 @@
         </form>
     </blockquote>
     <table id="usersList" lay-filter="usersList"></table>
+    <script type="text/html" id="usersListBar">
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    </script>
 </form>
 {/block}
 {block name="script"}
@@ -61,6 +64,7 @@
             height : "full-125",
             id:'usersListTable',
             cols : [[
+                {field: 'id', title: 'ID', align:"center"},
                 {field: 'username', title: '账户', width:120, align:"center"},
                 {field: 'phone', title: '联系方式', width:200},
                 {field: 'ctime', title: '创建时间', width:200, align:'center'},
@@ -69,6 +73,7 @@
                 {field: 'money', title: '剩余点数',  align:'center'},
                 {field: 'count', title: '登录次数',  align:'center'},
                 {field: 'sign', title: '分享积分',  align:'center'},
+                {title: '操作', width:170, templet:'#usersListBar',fixed:"right",align:"center"}
             ]]
         });
 
@@ -110,7 +115,37 @@
         }
         $(".adduser_btn").click(function(){
             add();
-        })
+        });
+
+        //列表操作
+        table.on('tool(usersList)', function(obj){
+            var layEvent = obj.event, data = obj.data;
+            if(layEvent === 'edit'){ //编辑
+                edit(data.id);
+            }
+        });
+        //编辑用户
+        function edit(uid){
+            var index = layui.layer.open({
+                title : "编辑用户",
+                type : 2,
+                area: ['600px', '400px'],
+                content : "{:url('/admin/platagentedit')}"+'?uid='+uid,
+                success : function(layero, index){
+                    var body = layui.layer.getChildFrame('body', index);
+                    setTimeout(function(){
+                        layui.layer.tips('点击此处返回列表', '.layui-layer-setwin .layui-layer-close', {
+                            tips: 3
+                        });
+                    },500)
+                }
+            })
+            //layui.layer.full(index);
+            //改变窗口大小时，重置弹窗的宽高，防止超出可视区域（如F12调出debug的操作）
+            // $(window).on("resize",function(){
+            //     layui.layer.full(index);
+            // })
+        }
 
     })
 </script>

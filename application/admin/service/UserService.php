@@ -202,34 +202,107 @@ class UserService
      * @author 原点 <467490186@qq.com>
      * @throws \Exception
      */
-    public static function edit($data)
+    public static function edit($data, $uid)
     {
-        $userdata = [
-            'name' => $data['name'],
-            'status' => $data['status'],
-        ];
-        $res = User::update($userdata, ['uid' => $data['uid']]);
-        if ($res) {
-            AuthGroupAccess::where('uid', '=', $data['uid'])->delete();
-            $group_ids = explode(',', $data['group_id']);
-            $save = [];
-            foreach ($group_ids as $v) {
-                $save[] = [
-                    'uid' => $data['uid'],
-                    'group_id' => $v
-                ];
-            }
-            $AuthGroupAccess = new AuthGroupAccess;
-            $res2 = $AuthGroupAccess->saveAll($save, false);
-            if ($res2) {
-                $msg = Result::success('编辑成功', url('/admin/userlist'));
-            } else {
-                $msg = Result::error('编辑失败');
-            }
-        } else {
-            $msg = Result::error('编辑失败');
+        //验证数据合法性
+        $validate = Validate::make([
+            'id'  => 'require',
+        ]);
+        if (!$validate->check($data)) {
+            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
+            return $msg;
         }
-        return $msg;
+        if($data['money']){
+            $agent = User::where('id', $uid)->find();
+            if($agent->money < $data['money']){
+                $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+                return $msg;
+            }
+            $member = User::where('id', $data['id'])->find();
+            $res = $member->setInc('money', $data['money']);
+            if(!$res){
+                $msg = Result::error('充值失败', null, ['token' => Request::token()]);
+                return $msg;
+            }
+            $agent->setDec('money', $data['money']);
+            $member->parentid = $uid;
+            $member->save();
+            $log = new Moneylog();
+            $log->uid = $uid;
+            $log->cid = $data['id'];
+            $log->ctime = time();
+            $log->money = $data['money'];
+            $log->save();
+            unset($agent);
+            unset($member);
+        }
+        if($data['card_type']){
+            $agent = User::where('id', $uid)->find();
+            $member = User::where('id', $data['id'])->find();
+            if($agent->money < $data['card_type']){
+                $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+                return $msg;
+            }
+            $type   =   '0';
+            switch ($data['card_type'])
+            {
+                case 0.5;
+                    $time  =   7*60*60*24;
+                    $day ='七天';
+                    break;
+                case 1;
+                    $time  =   30*60*60*24;
+                    $day ='一个月';
+                    break;
+                case 2;
+                    $time  =   90*60*60*24;
+                    $day ='三个月';
+                    break;
+                case 8;
+                    $time  =   365*60*60*24;
+                    $day ='一年';
+                    break;
+                case 10;
+                    $type   =   1;
+                    $day ='永久';
+                    break;
+            }
+            if($type == '1'){
+                $member->type = 1;
+                $agent->money = $agent->money - $data['card_type'];
+                $member->parentid = $uid;
+                $agent->save();
+                $member->save();
+                $log = new Timelog();
+                $log->uid = $uid;
+                $log->cid = $data['id'];
+                $log->ctime = time();
+                $log->day = 'all';
+                $log->money = $data['card_type'];
+                $log->lasttime = 'all';
+                $log->save();
+            }else{
+                if($member->lasttime < time()){
+                   $member->lasttime = time() + $time;
+                }else{
+                    $member->lasttime = $member->lasttime + $time;
+                }
+                $agent->money = $agent->money - $data['card_type'];
+                $member->parentid = $uid;
+                $agent->save();
+                $member->save();
+                $day = timediff($time);
+                $log = new Timelog();
+                $log->uid = $uid;
+                $log->cid = $data['id'];
+                $log->ctime = time();
+                $log->day = $day['day'];
+                $log->money = $data['card_type'];
+                $log->lasttime = $member->lasttime;
+                $log->save();
+            }
+        }
+        return $msg = Result::success('操作成功', url('/admin/platagent'));
     }
 
     /**
@@ -382,23 +455,118 @@ class UserService
 
     public static function editMember($data, $uid)
     {
-        //验证数据合法性
-        $validate = Validate::make([
-            'id' => 'require',
-            'name'  => 'require',
-            'user_type' => 'require',
-        ]);
+        if(isset($data['user_type']) && $data['user_type'] == '1'){
+            //验证数据合法性
+            $validate = Validate::make([
+                'id' => 'require',
+                'name'  => 'require',
+                'wx'  => 'require',
+                'contact'  => 'require',
+                'user_type' => 'require',
+            ]);
+        }elseif (isset($data['user_type']) && $data['user_type'] == '2'){
+            //验证数据合法性
+            $validate = Validate::make([
+                'id' => 'require',
+                'name'  => 'require',
+                'user_type' => 'require',
+            ]);
+        }
+
         if (!$validate->check($data)) {
             $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
             return $msg;
         }
+
         $user = User::Where('id',$data['id'])->find();
+        //修改密码 可选
         if (isset($data['password']) && ($data['password'] !== $data['password_confirm'])) {
             $msg = Result::error('两次密码不一致', null, ['token' => Request::token()]);
             return $msg;
+        }else{
+            $old_pass = $user->password;
+            $user->password =  md5(sha1($data['password']));
+            if($old_pass !== md5(sha1($data['password']))){
+                $passlog = new PassLog;
+                $passlog->ip = getIP();
+                $passlog->ctime = time();
+                $passlog->uid = $data['id'];
+                $passlog->aid = $uid;
+                $passlog->old_pass = $old_pass;
+                $passlog->pass = md5(sha1($data['password']));
+                $passlog->web = 0;
+                $passlog->save();
+            }
         }
+        //修改微信和联系方式
         isset( $data['wx']) && $user->weichat =  $data['wx'];
         isset( $data['contact']) && $user->phone =  $data['contact'];
+
+        //追加类型
+        if(isset($data['card_type'])){
+            $agent = User::where('id', $uid)->find();
+            if($agent->money < $data['card_type']){
+                $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+                return $msg;
+            }
+            $type   =   '0';
+            switch ($data['card_type'])
+            {
+                case 0.5;
+                    $time  =   7*60*60*24;
+                    $day ='七天';
+                    break;
+                case 1;
+                    $time  =   30*60*60*24;
+                    $day ='一个月';
+                    break;
+                case 2;
+                    $time  =   90*60*60*24;
+                    $day ='三个月';
+                    break;
+                case 8;
+                    $time  =   365*60*60*24;
+                    $day ='一年';
+                    break;
+                case 10;
+                    $type   =   1;
+                    $day ='永久';
+                    break;
+            }
+            if($type == '1'){
+                $user->type = 1;
+                $agent->money = $agent->money - $data['card_type'];
+                $user->parentid = $uid;
+                $agent->save();
+
+                $log = new Timelog();
+                $log->uid = $uid;
+                $log->cid = $data['id'];
+                $log->ctime = time();
+                $log->day = 'all';
+                $log->money = $data['card_type'];
+                $log->lasttime = 'all';
+                $log->save();
+            }else{
+                if($user->lasttime < time()){
+                    $user->lasttime = time() + $time;
+                }else{
+                    $user->lasttime = $user->lasttime + $time;
+                }
+                $agent->money = $agent->money - $data['card_type'];
+                $user->parentid = $uid;
+                $agent->save();
+                $day = timediff($time);
+                $log = new Timelog();
+                $log->uid = $uid;
+                $log->cid = $data['id'];
+                $log->ctime = time();
+                $log->day = $day['day'];
+                $log->money = $data['card_type'];
+                $log->lasttime = $user->lasttime;
+                $log->save();
+            }
+        }
         if($data['user_type'] == '1'){
             $money = User::where('id','=',$uid)->value('money');
             if($money < 20){
@@ -415,21 +583,7 @@ class UserService
                 }
             }
         }
-        if(isset($data['password'])){
-            $old_pass = $user->password;
-            if($old_pass !== md5(sha1($data['password']))){
-                $passlog = new PassLog;
-                $passlog->ip = getIP();
-                $passlog->ctime = time();
-                $passlog->uid = $data['id'];
-                $passlog->aid = $uid;
-                $passlog->old_pass = $old_pass;
-                $passlog->pass = md5(sha1($data['password']));
-                $passlog->web = 0;
-                $passlog->save();
-            }
-        }
-        isset($data['password']) && $user->password =  md5(sha1($data['password']));
+
         $user->ctime =  time();
         $res = $user->save();
         if ($res) {

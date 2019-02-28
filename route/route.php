@@ -35,6 +35,9 @@ Route::group('admin', [
     //卡密管理
     'add'=>'admin/Card/add',                                              //卡密添加
     'carduse'=>'admin/Card/uses',                                              //卡密添加
+    'cardexporttxt'=>'admin/Card/exportTxt',                                              //卡密添加
+    'cardexportexcel'=>'admin/Card/exportExcel',                                        //卡密添加
+    'carddown'=>'admin/Card/down',                                              //卡密添加
     'cardused'=>'admin/Card/used',                                              //卡密添加
     'platmoney'=>'admin/Plat/money',                                              //卡密添加
     'platpoint'=>'admin/Plat/point',                                              //卡密添加
