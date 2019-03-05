@@ -50,10 +50,12 @@
     <div class="layui-side layui-bg-black layui-side-scroll">
         <div class="user-photo">
             <a class="img" title="我的头像"><img src="/images/face.jpg" class="userAvatar"></a>
-            <p>你好！<span class="userName">{$Think.session.user_auth.name}</span>, 欢迎登录</p>
+            <!--<p>你好！<span class="userName">{$Think.session.user_auth.name}</span>, 欢迎登录</p>-->
+            <p>当前余额:{:isset($user) ? $user.money : ''}</p>
+            <p>分享码:{:isset($user) ? $user.id : ''}</p>
         </div>
 
-        <div id="navBar" class="navBar layui-side-scroll">
+        <div id="navBar" class="navBar layui-side-scroll" style="margin-top: 11px;">
             <ul class="layui-nav layui-nav-tree">
                 <li class="layui-nav-item">
                     <a href="javascript:;"><i class="fa fa-home" data-icon="fa fa-home"></i><cite>系统管理</cite><span class="layui-nav-more"></span></a>

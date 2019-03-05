@@ -37,7 +37,10 @@ class Index extends Common
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
-            $res = UserService::editAccount($data,$this->uid);
+            $res = UserService::editAccount($data,$this->user['username']);
+            if($data['share_id'] && $res['msg'] == '编辑成功'){
+                session('userid', $data['share_id']);
+            }
             return $res;
         } else {
             return $this->fetch();

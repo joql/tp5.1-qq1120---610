@@ -25,7 +25,6 @@ class Common extends Controller
      */
     protected function initialize()
     {
-
         $this->uid = $this->request->Loginid;
         $this->power = $this->request->Power;
         $this->assign('power', $this->power);

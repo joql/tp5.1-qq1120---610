@@ -45,8 +45,10 @@ class Login extends Controller
      */
     public function logout()
     {
-        session('user_auth', null);
-        session('user_auth_sign', null);
+        session('user', null);
+        session('userid', null);
+        //设置session签名
+        session('power', null);
         return ['msg' => '退出成功', 'url' => url('/admin/login')];
     }
 

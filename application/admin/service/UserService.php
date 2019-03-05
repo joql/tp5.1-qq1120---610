@@ -43,6 +43,7 @@ class UserService
         $list = User::where([
             'username' => $data['user'],
             'status' => 1,
+            'power' => '1',
             ])->where('power','in','0,1')->find();
         if (empty($list)) {
             return Result::error('登陆失败');
@@ -313,12 +314,23 @@ class UserService
      * @throws \Exception
      * date:
      */
-    public static function editAccount($data, $uid)
+    public static function editAccount($data, $username)
     {
-        $res = User::update($data, ['id' => $uid]);
+        if(!empty($data['share_id'])){
+            $exist_id = User::Where('id',$data['share_id'])->find();
+            if($exist_id){
+                $msg = Result::error('分享码已存在');
+                return $msg;
+            }
+            if(!User::where('username',$username)->update(['id'=>$data['share_id']])){
+                $msg = Result::error('分享码更新失败');
+                return $msg;
+            }
+        }
+        unset($data['share_id']);
+        $res = User::update($data, ['username'=>$username]);
         if ($res) {
-
-            $msg = Result::success('编辑成功', url('/admin/accountEdit'));
+            $msg = Result::success('编辑成功,请刷新页面', url('/admin/accountEdit'));
         } else {
             $msg = Result::error('编辑失败');
         }

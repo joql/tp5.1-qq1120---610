@@ -12,6 +12,12 @@
     <div class="layui-col-md10">
         <form id="form" method="post" class="layui-form layui-form-pane" action="{:url('/admin/accountEdit')}">
             <div class="layui-form-item">
+                <label class="layui-form-label">分享码</label>
+                <div class="layui-input-block">
+                    <input type="text" name="share_id" placeholder="分享码,默认为空不修改" autocomplete="off" class="layui-input" value="">
+                </div>
+            </div>
+            <div class="layui-form-item">
                 <label class="layui-form-label">QQ/微信</label>
                 <div class="layui-input-block">
                     <input type="text" name="weichat" placeholder="会显示在APP提示语后面" autocomplete="off" class="layui-input" value="{$user.weichat|default='无数据'}" lay-verify="required">
@@ -61,7 +67,6 @@
             </div>
             <div class="layui-form-item">
                 <div class="layui-input-block">
-                    <input type="hidden" name="__token__" id="token" value="{$Request.token}"/>
                     <button class="layui-btn" lay-submit lay-filter="*">立即提交</button>
                     <button type="reset" class="layui-btn layui-btn-primary">重置</button>
                 </div>
