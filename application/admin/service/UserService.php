@@ -214,6 +214,10 @@ class UserService
             return $msg;
         }
         if($data['money']){
+            if(!is_numeric($data['money']) || intval($data['money']) <=0){
+                $msg = Result::error('点数必须大于0', null, ['token' => Request::token()]);
+                return $msg;
+            }
             $agent = User::where('id', $uid)->find();
             if($agent->money < $data['money']){
                 $msg = Result::error('点数不足', null, ['token' => Request::token()]);
@@ -370,18 +374,18 @@ class UserService
             'card_type' => 'require',
         ]);
         if (!$validate->check($data)) {
-            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
+            $msg = Result::error($validate->getError(), null);
             return $msg;
         }
         if (isset($data['password']) && ($data['password'] !== $data['password_confirm'])) {
-            $msg = Result::error('两次密码不一致', null, ['token' => Request::token()]);
+            $msg = Result::error('两次密码不一致', null);
             return $msg;
         }
 
         $user = new User;
         $money = User::where('id','=',$uid)->value('money');
         if($money < $data['card_type']){
-            $msg = Result::error('点数不足', null, ['token' => Request::token()]);
+            $msg = Result::error('点数不足', null);
             return $msg;
         }
         $type   =   '0';
@@ -459,7 +463,7 @@ class UserService
             }
             $msg = Result::success('添加成功', url('/admin/platmember'));
         }else{
-            $msg = Result::error('添加失败', null, ['token' => Request::token()]);
+            $msg = Result::error('添加失败', null);
         }
         return $msg;
 
@@ -486,14 +490,14 @@ class UserService
         }
 
         if (!$validate->check($data)) {
-            $msg = Result::error($validate->getError(), null, ['token' => Request::token()]);
+            $msg = Result::error('参数错误', null);
             return $msg;
         }
 
         $user = User::Where('id',$data['id'])->find();
         //修改密码 可选
         if (isset($data['password']) && ($data['password'] !== $data['password_confirm'])) {
-            $msg = Result::error('两次密码不一致', null, ['token' => Request::token()]);
+            $msg = Result::error('两次密码不一致');
             return $msg;
         }else{
             $old_pass = $user->password;
@@ -616,7 +620,7 @@ class UserService
             $kai->save();
             $msg = Result::success('修改成功', url('/admin/platmember'));
         }else{
-            $msg = Result::error('修改失败', null, ['token' => Request::token()]);
+            $msg = Result::error('修改失败', null);
         }
         return $msg;
 

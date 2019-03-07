@@ -5,7 +5,7 @@
     <div class="layui-form-item">
         <label class="layui-form-label">充值点数</label>
         <div class="layui-input-block">
-            <input type="text" name="money" placeholder="请输入充值点数" autocomplete="off" class="layui-input" lay-verify="">
+            <input type="text" name="money" placeholder="请输入充值点数" autocomplete="off" class="layui-input" lay-verify="notzero">
         </div>
     </div>
     <div class="layui-input-inline">
@@ -98,6 +98,11 @@
                     }
                 });
                 return msg;
+            },
+            notzero: function (value, item) { //value：表单的值、item：表单的DOM对象
+                if(value=='' || parseInt(value)<=0){
+                    return '必须大于0';
+                }
             },
             password: [
                 /^[\w\W]{6,18}$/

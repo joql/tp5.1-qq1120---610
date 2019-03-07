@@ -75,8 +75,8 @@ class Plat extends Common
                 $cards[$key] = $val;
                 //$cards[$key]['mname'] = $this->user['username'];
                 $cards[$key]['ctime'] = date('Y-m-d H:i:s',$cards[$key]['ctime']);
-                $cards[$key]['iname'] = \app\admin\model\User::Where(array('id'=>$val['cid']))->value('nick_name');
-                $cards[$key]['dname'] = \app\admin\model\User::Where(array('id'=>$val['uid']))->value('nick_name');
+                $cards[$key]['iname'] = \app\admin\model\User::Where(array('id'=>$val['cid']))->value('username');
+                $cards[$key]['dname'] = \app\admin\model\User::Where(array('id'=>$val['uid']))->value('username');
             }
             $this->json($cards, 0, '', ['count' => $list->total()]);
         }
@@ -170,7 +170,7 @@ class Plat extends Common
     public function memberEdit()
     {
         if ($this->request->isPost()) {
-            $data = $this->request->post();
+            $data = input('post.');
             if ($data['id']) {
                 //编辑
                 $res = UserService::editMember($data, $this->uid);

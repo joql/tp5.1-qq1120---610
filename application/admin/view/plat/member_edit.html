@@ -89,7 +89,8 @@
                 }
             },
             passwordNew: function (value, item) { //value：表单的值、item：表单的DOM对象
-                if(value !== '' && /^[\w\W]{6,18}$/.test(value)){
+                var re = new RegExp('/^[wW]{6,18}$/','i');
+                if(value !== '' && re.test(value)){
                     return '密码长度必须6到18位';
                 }
             },
